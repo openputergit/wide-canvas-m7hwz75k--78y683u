@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceLegal Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f8fafc;
+        }
+        .recording-pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.05); }
+        }
+        .chat-container {
+            height: calc(100vh - 400px);
+            min-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4 md:p-8 bg-gradient-to-b from-indigo-50 to-white">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-700">VoiceLegal Assistant</h1>
+            <p class="text-gray-600 mt-2">Your AI-powered legal companion</p>
+        </header>
+
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Main Chat Interface -->
+            <div class="md:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                <div id="chatContainer" class="chat-container overflow-y-auto mb-4 space-y-4 p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <i class="bi bi-robot text-indigo-600"></i>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 rounded-lg p-4 max-w-[80%]">
+                            <p class="text-gray-800">नमस्ते! मैं आपका कानूनी सहायक हूं। मैं आपकी कैसे मदद कर सकता हूं?</p>
+                            <p class="text-gray-800 mt-2">Hello! I'm your legal assistant. How can I help you today?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3 mt-4">
+                    <button id="languageToggle" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg">
+                        <i class="bi bi-translate"></i> <span>हिंदी / English</span>
+                    </button>
+                    <input type="text" id="userInput" class="flex-1 border-2 border-indigo-100 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500" placeholder="Type your query...">
+                    <button id="voiceInputBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="bi bi-mic-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Legal Tools Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-indigo-700 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg text-left transition-colors">
+                            <i class="bi bi-file-earmark-text mr-2"></i> File New Case
+                        </button>
+                        <button class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg text-left transition-colors">
+                            <i class="bi bi-search mr-2"></i> Track Case Status
+                        </button>
+                        <button class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg text-left transition-colors">
+                            <i class="bi bi-person-badge mr-2"></i> Find Legal Aid
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Legal Resources -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-indigo-700 mb-4">Legal Resources</h3>
+                    <div class="space-y-3">
+                        <a href="#" class="block bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg transition-colors">
+                            <i class="bi bi-book mr-2"></i> Legal Dictionary
+                        </a>
+                        <a href="#" class="block bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg transition-colors">
+                            <i class="bi bi-translate mr-2"></i> Document Translation
+                        </a>
+                        <a href="#" class="block bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded-lg transition-colors">
+                            <i class="bi bi-question-circle mr-2"></i> FAQs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isListening = false;
+        let isHindi = false;
+        
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        // Language Toggle
+        document.getElementById('languageToggle').addEventListener('click', () => {
+            isHindi = !isHindi;
+            recognition.lang = isHindi ? 'hi-IN' : 'en-US';
+        });
+
+        // Voice Input Button
+        document.getElementById('voiceInputBtn').addEventListener('click', () => {
+            if (!isListening) {
+                recognition.start();
+                document.getElementById('voiceInputBtn').classList.add('recording-pulse');
+            } else {
+                recognition.stop();
+                document.getElementById('voiceInputBtn').classList.remove('recording-pulse');
+            }
+            isListening = !isListening;
+        });
+
+        recognition.onresult = (event) => {
+            const message = event.results[0][0].transcript;
+            document.getElementById('userInput').value = message;
+            processSpeech(message);
+            document.getElementById('voiceInputBtn').classList.remove('recording-pulse');
+            isListening = false;
+        };
+
+        async function processSpeech(message) {
+            appendMessage('user', message);
+
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/ai', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ht1xmCS4MRMxnEfcUkLbqbkDjhg1',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [{
+                            role: "user",
+                            content: [{
+                                type: "text",
+                                text: message
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                appendMessage('assistant', data.message);
+                speakResponse(data.message);
+
+                // Store conversation in MongoDB
+                await storeConversation(message, data.message);
+
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+            }
+        }
+
+        function appendMessage(sender, message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex items-start space-x-3 ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            const messageContent = `
+                ${sender === 'assistant' ? `
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-robot text-indigo-600"></i>
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="${sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-gray-800'} rounded-lg p-4 max-w-[80%]">
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            messageDiv.innerHTML = messageContent;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function speakResponse(message) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = isHindi ? 'hi-IN' : 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        async function storeConversation(userMessage, aiResponse) {
+            try {
+                await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ht1xmCS4MRMxnEfcUkLbqbkDjhg1',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: 'voice-legal-assist-123',
+                        action: 'create',
+                        collection: 'conversations',
+                        data: {
+                            userMessage,
+                            aiResponse,
+                            timestamp: new Date().toISOString(),
+                            language: isHindi ? 'hi-IN' : 'en-US'
+                        }
+                    })
+                });
+            } catch (error) {
+                console.error('Error storing conversation:', error);
+            }
+        }
+
+        // Handle text input
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const message = e.target.value.trim();
+                if (message) {
+                    processSpeech(message);
+                    e.target.value = '';
+                }
+            }
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
